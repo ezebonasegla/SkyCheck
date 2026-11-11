@@ -22,16 +22,30 @@ Todo se configura en [`config.yaml`](config.yaml) (rutas, fechas, días, precio 
    reporte (`data/ultimo_reporte.md`).
 4. Envía el resumen por email.
 
-## Dónde corre
+## Dónde corre: en tu VPS
 
-Todo automático en **GitHub Actions**: todos los días a las 08:17 (hora Argentina),
-sin necesidad de tener la compu prendida. El historial de precios se guarda en el repo.
+Se instala una vez en tu servidor Linux y queda programado con **cron** todos los
+días. El historial de precios queda en `data/history.sqlite` en el VPS.
+
+```bash
+git clone -b claude/beautiful-mendel-4tx7tv https://github.com/ezebonasegla/SkyCheck.git
+cd SkyCheck
+cp .env.example .env
+nano .env                       # mail, contraseña de aplicación de Gmail, SERPAPI_KEY
+bash instalar_vps.sh            # instala todo y lo programa a las 09:17 (hora del VPS)
+./correr.sh && tail -50 data/skycheck.log   # probarlo ahora
+```
+
+- Cambiar la hora: `HORA=8 MINUTO=30 bash instalar_vps.sh`
+- Ver el log: `tail -f data/skycheck.log`
+- Actualizar el bot: `git pull`
+- Desinstalar: `crontab -e` y borrar la línea de `correr.sh`
 
 **Google Flights** (vía SerpApi) es la fuente estable. Despegar, Turismocity,
-Skyscanner y CheapOair se intentan también, pero suelen bloquear servidores como los
-de GitHub: cuando pasa, el mail lo dice en "Estado de las fuentes".
+Skyscanner y CheapOair también se consultan; algunos pueden pedir captcha a IPs de
+servidores. Cuando pasa, el mail lo dice en "Estado de las fuentes".
 
-(Opcional: también se puede correr en tu compu con `correr.bat` / `correr.sh`, ver más abajo.)
+(También hay un workflow de GitHub Actions para correrlo a mano, y `correr.bat` para Windows.)
 
 ### Para no ser bloqueado
 - Pocas búsquedas: 5 por sitio por día, con 20–60 s de pausa entre una y otra.
@@ -48,25 +62,17 @@ de GitHub: cuando pasa, el mail lo dice en "Estado de las fuentes".
 ### 1. Email (Gmail)
 1. En tu cuenta de Google activá la verificación en 2 pasos.
 2. Creá una **contraseña de aplicación** en <https://myaccount.google.com/apppasswords>.
-3. En GitHub: *Settings → Secrets and variables → Actions → New repository secret* y creá:
+3. Poné los datos en el archivo `.env` del VPS (`EMAIL_TO`, `SMTP_USER`,
+   `SMTP_PASSWORD`). Si usás GitHub Actions, van como *Repository secrets*.
 
-| Secret | Valor |
-|---|---|
-| `EMAIL_TO` | el mail donde querés recibir el resumen |
-| `SMTP_USER` | el Gmail que envía (puede ser el mismo) |
-| `SMTP_PASSWORD` | la contraseña de aplicación de 16 letras |
-
-> El destinatario va como secreto y no en el código para que tu mail no quede público.
+> El destinatario va en `.env` / secrets y no en el código para que tu mail no quede público.
 
 ### 2. Google Flights (recomendado)
 Creá una cuenta en <https://serpapi.com> (plan gratis = 100 búsquedas/mes) y guardá la
-API key como secreto `SERPAPI_KEY`. Con el plan gratis el bot hace 3 búsquedas por día;
+API key como `SERPAPI_KEY` en `.env`. Con el plan gratis el bot hace 3 búsquedas por día;
 si pagás un plan más grande subí `max_searches_per_run` en `config.yaml`.
 Google Flights calcula el precio **con el carry-on incluido** (`bags=1`).
 
-### 3. Probarlo
-Pasá la rama a `main`, y en la pestaña **Actions** → *SkyCheck diario* → **Run workflow**.
-En unos minutos te llega el mail. Desde ahí corre solo todos los días.
 
 ### Opcional: correrlo en tu compu (Windows)
 1. Instalá Python 3 desde <https://www.python.org/downloads/> (tildá *Add python.exe to PATH*).

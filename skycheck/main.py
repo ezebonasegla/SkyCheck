@@ -83,7 +83,7 @@ def run(cfg: dict, send: bool = True, dry_run: bool = False,
             errors[prov.name] = f"en pausa: bloqueó el acceso el {since} UTC (se reintenta en {cooldown_h:.0f} h)"
             print(f"[{prov.name}] {errors[prov.name]}")
             continue
-        queue = store.order_by_staleness(prov.name, trips)[: prov.budget]
+        queue = store.order_by_staleness(prov.name, trips, prov.budget)[: prov.budget]
         print(f"[{prov.name}] {len(queue)} búsquedas")
         try:
             for trip in queue:

@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import sqlite3
-from datetime import datetime, timezone
+from datetime import date, datetime, timezone
 from pathlib import Path
 from typing import Optional
 
@@ -51,10 +51,20 @@ class Storage:
         rows = self.db.execute("SELECT trip_key, checked_at FROM checks WHERE source=?", (source,))
         return dict(rows.fetchall())
 
-    def order_by_staleness(self, source: str, trips: list[Trip]) -> list[Trip]:
-        """Primero las combinaciones nunca revisadas, luego las más viejas."""
+    def order_by_staleness(self, source: str, trips: list[Trip], budget: int = 10,
+                           today: Optional[date] = None) -> list[Trip]:
+        """Primero las combinaciones nunca revisadas, luego las más viejas.
+
+        Entre las nunca revisadas se arranca en un punto que avanza cada día, así la
+        rotación funciona aunque el historial no se guarde entre ejecuciones."""
         seen = self.last_checked(source)
-        return sorted(trips, key=lambda t: seen.get(t.key, ""))
+        n = len(trips)
+        if not n:
+            return []
+        today = today or date.today()
+        offset = (today.toordinal() * max(budget, 1)) % n
+        rotated = trips[offset:] + trips[:offset]
+        return sorted(rotated, key=lambda t: seen.get(t.key, ""))
 
     def mark_checked(self, source: str, trip: Trip, ok: bool) -> None:
         self.db.execute(

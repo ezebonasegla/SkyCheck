@@ -10,4 +10,5 @@ if [ ! -x .venv/bin/python ]; then
   .venv/bin/python -m playwright install chromium
 fi
 mkdir -p data
+echo "===== $(date '+%F %T') =====" >> data/skycheck.log
 .venv/bin/python -m skycheck.main >> data/skycheck.log 2>&1

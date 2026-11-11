@@ -3,10 +3,12 @@ name: SkyCheck diario
 # Si Despegar / Turismocity / Skyscanner / CheapOair piden captcha, ese sitio queda
 # en pausa 48 h (el historial de pausas se guarda en data/) y el mail lo avisa.
 
+# El bot corre todos los días en el VPS (ver README). Este workflow queda solo
+# para correrlo a mano; para programarlo acá, descomentá "schedule".
 on:
-  schedule:
-    - cron: "17 11 * * *"   # todos los días 08:17 hora Argentina (11:17 UTC)
-  workflow_dispatch: {}      # botón "Run workflow" para correrlo a mano
+  # schedule:
+  #   - cron: "17 11 * * *"   # 08:17 hora Argentina (11:17 UTC)
+  workflow_dispatch: {}
 
 permissions:
   contents: write            # para guardar el historial de precios en el repo

@@ -183,3 +183,14 @@ def test_waits_for_human_to_solve_captcha(monkeypatch):
 
     monkeypatch.setenv("SKYCHECK_HEADLESS", "true")
     assert sp._wait_for_human(FakePage()) is False  # en servidor no espera
+
+
+def test_rotation_without_history_covers_new_dates_each_day(tmp_path):
+    from datetime import timedelta
+    trips = generate_trips(CFG)
+    seen = set()
+    for i in range(15):
+        st = Storage(tmp_path / f"db{i}.sqlite")  # historial vacío cada día
+        day = date(2026, 12, 1) + timedelta(days=i)
+        seen |= {t.key for t in st.order_by_staleness("x", trips, 10, day)[:10]}
+    assert len(seen) == len(trips)  # en 15 días cubre las 147 combinaciones
