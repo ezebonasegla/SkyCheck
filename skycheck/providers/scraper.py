@@ -9,8 +9,10 @@ SITE_RULES o pisar desde config.yaml (`providers.<sitio>.card_selector`).
 """
 from __future__ import annotations
 
+import os
 import random
 import re
+import sys
 import time
 
 from ..baggage import detect_carry_on
@@ -81,7 +83,7 @@ class ScraperProvider(Provider):
                 except ImportError as e:  # pragma: no cover
                     raise ProviderUnavailable("playwright no está instalado") from e
                 self._own_pw = sync_playwright().start()
-                self._browser = self._own_pw.chromium.launch(headless=True)
+                self._browser = self._own_pw.chromium.launch(headless=self._headless())
             self._context = self._browser.new_context(
                 locale="es-AR",
                 timezone_id="America/Argentina/Buenos_Aires",
@@ -92,6 +94,40 @@ class ScraperProvider(Provider):
                 ),
             )
         return self._context
+
+    def _browser_cfg(self) -> dict:
+        return self.cfg.get("browser") or {}
+
+    def _headless(self) -> bool:
+        env = os.environ.get("SKYCHECK_HEADLESS")
+        if env is not None:
+            return env.lower() in ("1", "true", "yes", "si")
+        if sys.platform.startswith("linux") and not os.environ.get("DISPLAY"):
+            return True  # servidor sin pantalla (ej. GitHub Actions)
+        return bool(self._browser_cfg().get("headless", True))
+
+    def _is_blocked(self, page) -> bool:
+        body = page.inner_text("body")[:20_000].lower()
+        return any(m in body for m in BLOCK_MARKERS)
+
+    def _wait_for_human(self, page) -> bool:
+        """Con el navegador visible, si aparece un captcha avisa y espera a que
+        lo resuelvas vos. Devuelve True si se destrabó."""
+        minutes = float(self._browser_cfg().get("wait_for_captcha_minutes", 0))
+        if self._headless() or minutes <= 0:
+            return False
+        print(f"\a[{self.name}] Apareció un captcha: resolvelo en la ventana del navegador "
+              f"(espero hasta {minutes:.0f} min)...", flush=True)
+        deadline = time.time() + minutes * 60
+        while time.time() < deadline:
+            page.wait_for_timeout(5_000)
+            try:
+                if not self._is_blocked(page):
+                    print(f"[{self.name}] ¡Listo, sigo!", flush=True)
+                    return True
+            except Exception:
+                pass  # la página está navegando
+        return False
 
     def _pause(self):
         lo, hi = self.cfg.get("delay_between_searches", [20, 60])
@@ -112,9 +148,13 @@ class ScraperProvider(Provider):
             except Exception:
                 pass
             page.wait_for_timeout(4_000)
-            body = page.inner_text("body")[:20_000].lower()
-            if any(m in body for m in BLOCK_MARKERS):
-                raise ProviderBlocked(f"{self.name} pidió captcha / bloqueó el acceso")
+            if self._is_blocked(page):
+                if not self._wait_for_human(page):
+                    raise ProviderBlocked(f"{self.name} pidió captcha / bloqueó el acceso")
+                try:
+                    page.wait_for_selector(self.rules["card_selector"], timeout=45_000)
+                except Exception:
+                    pass
 
             cards = page.query_selector_all(self.rules["card_selector"])
             texts = [c.inner_text() for c in cards[:30]]

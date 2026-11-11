@@ -37,8 +37,11 @@ workflow en GitHub (*Actions → SkyCheck diario → ⋯ → Disable workflow*).
 - Pocas búsquedas: 5 por sitio por día, con 20–60 s de pausa entre una y otra.
 - Si un sitio pide captcha o bloquea, el bot **lo deja en pausa 48 h** en vez de
   insistir (`block_cooldown_hours` en `config.yaml`). El mail lo indica.
-- No usa servicios para resolver captchas ni proxies: si un sitio igual bloquea,
-  queda Google Flights y los links directos del mail.
+- **Captcha → lo resolvés vos:** en tu compu el navegador se abre visible. Si un sitio
+  muestra captcha, suena un aviso y el bot espera hasta 10 minutos a que lo resuelvas
+  en la ventana, y sigue solo (`browser` en `config.yaml`). Si no estás, ese sitio
+  queda en pausa y el resto sigue.
+- No simula comportamiento humano, no usa servicios para resolver captchas ni proxies.
 
 ## Puesta en marcha (una sola vez)
 
@@ -69,7 +72,8 @@ Google Flights calcula el precio **con el carry-on incluido** (`bags=1`).
 4. Doble clic en `correr.bat` una vez para probar (la primera vez instala todo; tarda
    unos minutos). Vas a recibir el mail y el detalle queda en `data\skycheck.log`.
 5. Clic derecho en `instalar_tarea_windows.ps1` → **Ejecutar con PowerShell**. Queda
-   programado todos los días a las 9:00.
+   programado todos los días a las 9:00. Elegí una hora en la que suelas estar en la
+   compu, por si aparece algún captcha.
 
 En Mac/Linux: lo mismo con `./correr.sh`, y programarlo con `crontab -e` agregando
 `0 9 * * * /ruta/a/SkyCheck/correr.sh`.

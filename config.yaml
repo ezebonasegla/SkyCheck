@@ -70,5 +70,13 @@ delay_between_searches: [20, 60]
 # (insistir enseguida solo hace que el bloqueo dure más).
 block_cooldown_hours: 48
 
+# Navegador para Despegar / Turismocity / Skyscanner / CheapOair.
+browser:
+  # false = se abre una ventana de Chrome visible mientras busca (solo en tu compu).
+  headless: false
+  # Si un sitio muestra captcha, suena un aviso y el bot espera a que lo
+  # resuelvas vos en la ventana. 0 = no esperar (el sitio queda en pausa 48 h).
+  wait_for_captcha_minutes: 10
+
 database: data/history.sqlite
 report_file: data/ultimo_reporte.md

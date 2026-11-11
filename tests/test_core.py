@@ -160,3 +160,26 @@ def test_only_and_skip(tmp_path, monkeypatch):
     ran.clear()
     m.run(cfg, send=False, skip=["google_flights"])
     assert set(ran) == {"despegar"}
+
+
+def test_waits_for_human_to_solve_captcha(monkeypatch):
+    monkeypatch.setenv("SKYCHECK_HEADLESS", "false")
+    cfg = {**CFG, "browser": {"headless": False, "wait_for_captcha_minutes": 1}}
+    sp = ScraperProvider("skyscanner", cfg)
+
+    class FakePage:
+        def __init__(self):
+            self.n = 0
+
+        def wait_for_timeout(self, ms):
+            self.n += 1
+
+        def inner_text(self, sel):
+            return "Are you a robot?" if self.n < 3 else "Resultados US$ 700"
+
+    page = FakePage()
+    assert sp._is_blocked(page)
+    assert sp._wait_for_human(page) is True
+
+    monkeypatch.setenv("SKYCHECK_HEADLESS", "true")
+    assert sp._wait_for_human(FakePage()) is False  # en servidor no espera
