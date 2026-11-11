@@ -1,0 +1,69 @@
+# ---------------------------------------------------------------------------
+# SkyCheck - configuración de la búsqueda
+# ---------------------------------------------------------------------------
+
+# Viaje "multi-destino" (open-jaw): ida a Cartagena, vuelta desde Medellín.
+itinerary:
+  outbound:            # Buenos Aires -> Cartagena
+    origin: BUE        # código de ciudad (EZE + AEP)
+    destination: CTG
+  inbound:             # Medellín -> Buenos Aires
+    origin: MDE
+    destination: BUE
+
+# Ventana de fechas: tanto la ida como la vuelta deben caer dentro de este rango.
+window:
+  start: 2027-03-01
+  end: 2027-04-30
+
+# Duración del viaje en días (fecha vuelta - fecha ida).
+stay_days:
+  min: 11
+  max: 13
+
+passengers:
+  adults: 1
+
+currency: USD
+
+# Equipaje de mano (carry-on, valija chica de cabina) obligatorio.
+#   true  -> se descartan tarifas que dicen explícitamente "sin equipaje de mano"
+#            y en Google Flights se pide el precio con 1 carry-on incluido.
+#   Las tarifas donde no se puede determinar quedan marcadas como "verificar".
+require_carry_on: true
+
+alerts:
+  # Avisar siempre que aparezca algo por debajo de este precio total (ida + vuelta).
+  max_price: 700
+  # Avisar también cuando se encuentre un nuevo mínimo histórico.
+  notify_new_minimum: true
+  # Cuántas opciones incluir en el resumen diario.
+  top_n: 10
+
+# Fuentes. Cada una tiene un presupuesto de búsquedas por ejecución; las
+# combinaciones de fechas se van rotando día a día (primero las que hace más
+# tiempo que no se revisan), así que en pocos días se cubre todo el rango.
+providers:
+  google_flights:          # vía SerpApi (necesita SERPAPI_KEY). La fuente más confiable.
+    enabled: true
+    # Plan gratis de SerpApi = 100 búsquedas/mes -> 3 por día.
+    # Con el plan pago (1000/mes) se puede subir a ~30.
+    max_searches_per_run: 3
+  despegar:
+    enabled: true
+    max_searches_per_run: 10
+  turismocity:
+    enabled: true
+    max_searches_per_run: 10
+  skyscanner:
+    enabled: true
+    max_searches_per_run: 10
+  cheapoair:
+    enabled: true
+    max_searches_per_run: 10
+
+# Pausa (segundos) entre búsquedas de un mismo sitio, para no ser bloqueado.
+delay_between_searches: [8, 20]
+
+database: data/history.sqlite
+report_file: data/ultimo_reporte.md
