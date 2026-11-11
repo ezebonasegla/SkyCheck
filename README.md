@@ -22,8 +22,23 @@ Todo se configura en [`config.yaml`](config.yaml) (rutas, fechas, días, precio 
    reporte (`data/ultimo_reporte.md`).
 4. Envía el resumen por email.
 
-Corre gratis en **GitHub Actions** todos los días a las 08:17 (hora Argentina) —
-ver [`.github/workflows/daily.yml`](.github/workflows/daily.yml).
+## ¿Dónde corre? Dos opciones
+
+| | En tu compu (recomendado) | En GitHub Actions |
+|---|---|---|
+| Fuentes | las 5 | solo Google Flights |
+| Requisito | la compu prendida (si estaba apagada, corre al prenderla) | nada |
+| Por qué | Despegar, Turismocity, Skyscanner y CheapOair bloquean las IPs de servidores como los de GitHub, pero no a una conexión hogareña que hace unas pocas búsquedas por día | |
+
+Usá **una sola** para no recibir dos mails: si programás tu compu, desactivá el
+workflow en GitHub (*Actions → SkyCheck diario → ⋯ → Disable workflow*).
+
+### Para no ser bloqueado
+- Pocas búsquedas: 5 por sitio por día, con 20–60 s de pausa entre una y otra.
+- Si un sitio pide captcha o bloquea, el bot **lo deja en pausa 48 h** en vez de
+  insistir (`block_cooldown_hours` en `config.yaml`). El mail lo indica.
+- No usa servicios para resolver captchas ni proxies: si un sitio igual bloquea,
+  queda Google Flights y los links directos del mail.
 
 ## Puesta en marcha (una sola vez)
 
@@ -46,31 +61,42 @@ API key como secreto `SERPAPI_KEY`. Con el plan gratis el bot hace 3 búsquedas 
 si pagás un plan más grande subí `max_searches_per_run` en `config.yaml`.
 Google Flights calcula el precio **con el carry-on incluido** (`bags=1`).
 
-### 3. Probarlo
-En la pestaña **Actions** → *SkyCheck diario* → **Run workflow**. En unos minutos te
-llega el mail.
+### 3a. Programarlo en tu compu (Windows)
+1. Instalá Python 3 desde <https://www.python.org/downloads/> (tildá *Add python.exe to PATH*).
+2. Descargá el repo (*Code → Download ZIP*) y descomprimilo, por ejemplo en `C:\SkyCheck`.
+3. Copiá `.env.example` como `.env` y completá tu mail, la contraseña de aplicación y la
+   `SERPAPI_KEY`. (`.env` queda solo en tu compu.)
+4. Doble clic en `correr.bat` una vez para probar (la primera vez instala todo; tarda
+   unos minutos). Vas a recibir el mail y el detalle queda en `data\skycheck.log`.
+5. Clic derecho en `instalar_tarea_windows.ps1` → **Ejecutar con PowerShell**. Queda
+   programado todos los días a las 9:00.
 
-## Correrlo en tu compu
+En Mac/Linux: lo mismo con `./correr.sh`, y programarlo con `crontab -e` agregando
+`0 9 * * * /ruta/a/SkyCheck/correr.sh`.
+
+### 3b. O dejarlo en GitHub Actions
+En la pestaña **Actions** → *SkyCheck diario* → **Run workflow**. En unos minutos te
+llega el mail (solo con Google Flights).
+
+## Comandos
 
 ```bash
-pip install -r requirements.txt
-python -m playwright install chromium
-export EMAIL_TO=... SMTP_USER=... SMTP_PASSWORD=... SERPAPI_KEY=...
-python -m skycheck.main            # busca y manda el mail
-python -m skycheck.main --no-email # solo muestra el reporte
-python -m skycheck.main --dry-run  # lista las combinaciones de fechas
-python -m pytest                   # tests
+python -m skycheck.main                       # busca y manda el mail
+python -m skycheck.main --no-email            # solo muestra el reporte
+python -m skycheck.main --only google_flights # solo algunas fuentes
+python -m skycheck.main --skip skyscanner     # saltear alguna
+python -m skycheck.main --dry-run             # lista las combinaciones de fechas
+python -m pytest                              # tests
 ```
 
 ## Limitaciones (importante)
 
 - **Despegar, Turismocity, Skyscanner y CheapOair no tienen API pública.** El bot los
   lee con un navegador automatizado (Playwright). Estos sitios tienen protección
-  anti-bots y a veces muestran captcha o bloquean IPs de servidores (como las de
-  GitHub Actions); en ese caso el mail lo indica en "Estado de las fuentes" y el
-  resto sigue funcionando. Si cambian el diseño de su página hay que ajustar los
-  selectores en `skycheck/providers/scraper.py` (o `card_selector` en `config.yaml`).
-  Correrlo desde tu propia compu suele andar mejor que desde GitHub.
+  anti-bots y aun desde tu compu pueden pedir captcha alguna vez; en ese caso el sitio
+  queda en pausa, el mail lo indica en "Estado de las fuentes" y el resto sigue
+  funcionando. Si cambian el diseño de su página hay que ajustar los selectores en
+  `skycheck/providers/scraper.py` (o `card_selector` en `config.yaml`).
 - Revisá los términos de uso de cada sitio; el bot hace pocas búsquedas por día y con
   pausas largas entre una y otra.
 - **Equipaje de mano:** se detecta por el texto de cada tarifa. Si el sitio no lo aclara

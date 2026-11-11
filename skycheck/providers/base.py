@@ -7,6 +7,10 @@ class ProviderUnavailable(Exception):
     """La fuente no se puede usar en esta ejecución (falta API key, bloqueo, etc.)."""
 
 
+class ProviderBlocked(ProviderUnavailable):
+    """El sitio mostró captcha o bloqueó el acceso: se lo deja descansar unos días."""
+
+
 class Provider:
     name: str = "base"
 

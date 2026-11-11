@@ -29,6 +29,11 @@ CREATE TABLE IF NOT EXISTS offers (
     url TEXT
 );
 CREATE INDEX IF NOT EXISTS offers_price ON offers(price);
+CREATE TABLE IF NOT EXISTS blocks (
+    source TEXT PRIMARY KEY,
+    blocked_at TEXT NOT NULL,
+    reason TEXT
+);
 """
 
 
@@ -56,6 +61,22 @@ class Storage:
             "INSERT OR REPLACE INTO checks VALUES (?,?,?,?)", (source, trip.key, _now(), int(ok))
         )
         self.db.commit()
+
+    def mark_blocked(self, source: str, reason: str) -> None:
+        self.db.execute("INSERT OR REPLACE INTO blocks VALUES (?,?,?)", (source, _now(), reason))
+        self.db.commit()
+
+    def clear_block(self, source: str) -> None:
+        self.db.execute("DELETE FROM blocks WHERE source=?", (source,))
+        self.db.commit()
+
+    def in_cooldown(self, source: str, hours: float) -> Optional[str]:
+        """Si el sitio nos bloqueó hace menos de `hours`, devuelve desde cuándo."""
+        row = self.db.execute(
+            "SELECT blocked_at FROM blocks WHERE source=? AND blocked_at > datetime('now', ?)",
+            (source, f"-{float(hours)} hours"),
+        ).fetchone()
+        return row[0] if row else None
 
     def best_price_ever(self, currency: str) -> Optional[float]:
         row = self.db.execute(

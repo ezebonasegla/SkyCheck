@@ -105,3 +105,58 @@ def test_storage_rotation_and_report(tmp_path):
     assert st.recent_best("USD")[0][3] == 610
     subject, text, html = build_report(CFG, [o], [o], {"despegar": {"searched": 1, "offers": 1}}, {})
     assert "USD 610" in subject and "Avianca" in text and "<table" in html
+
+
+def test_block_cooldown(tmp_path):
+    st = Storage(tmp_path / "db.sqlite")
+    assert st.in_cooldown("skyscanner", 48) is None
+    st.mark_blocked("skyscanner", "captcha")
+    assert st.in_cooldown("skyscanner", 48)
+    assert st.in_cooldown("skyscanner", 0) is None
+    st.clear_block("skyscanner")
+    assert st.in_cooldown("skyscanner", 48) is None
+
+
+def test_blocked_site_is_paused_next_run(tmp_path, monkeypatch):
+    import skycheck.main as m
+    from skycheck.providers.base import Provider, ProviderBlocked
+
+    calls = []
+
+    class Blocky(Provider):
+        name = "skyscanner"
+
+        def search(self, trip):
+            calls.append(trip)
+            raise ProviderBlocked("captcha")
+
+    cfg = {**CFG, "database": str(tmp_path / "db.sqlite"), "report_file": str(tmp_path / "r.md")}
+    monkeypatch.setattr(m, "build_providers", lambda c: [Blocky(c)])
+    m.run(cfg, send=False)
+    m.run(cfg, send=False)
+    assert len(calls) == 1  # la segunda vez ni lo intenta
+    assert "en pausa" in (tmp_path / "r.md").read_text()
+
+
+def test_only_and_skip(tmp_path, monkeypatch):
+    import skycheck.main as m
+    from skycheck.providers.base import Provider
+
+    ran = []
+
+    def mk(n):
+        class P(Provider):
+            name = n
+
+            def search(self, trip):
+                ran.append(self.name)
+                return []
+        return P
+
+    cfg = {**CFG, "database": str(tmp_path / "db.sqlite"), "report_file": str(tmp_path / "r.md")}
+    monkeypatch.setattr(m, "build_providers", lambda c: [mk("google_flights")(c), mk("despegar")(c)])
+    m.run(cfg, send=False, only=["google_flights"])
+    assert set(ran) == {"google_flights"}
+    ran.clear()
+    m.run(cfg, send=False, skip=["google_flights"])
+    assert set(ran) == {"despegar"}

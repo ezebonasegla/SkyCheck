@@ -16,7 +16,7 @@ import time
 from ..baggage import detect_carry_on
 from ..links import build_link
 from ..models import Offer, Trip
-from .base import Provider, ProviderUnavailable
+from .base import Provider, ProviderBlocked, ProviderUnavailable
 
 SITE_RULES = {
     "despegar": {
@@ -94,7 +94,7 @@ class ScraperProvider(Provider):
         return self._context
 
     def _pause(self):
-        lo, hi = self.cfg.get("delay_between_searches", [8, 20])
+        lo, hi = self.cfg.get("delay_between_searches", [20, 60])
         if not self._first:
             time.sleep(random.uniform(lo, hi))
         self._first = False
@@ -114,7 +114,7 @@ class ScraperProvider(Provider):
             page.wait_for_timeout(4_000)
             body = page.inner_text("body")[:20_000].lower()
             if any(m in body for m in BLOCK_MARKERS):
-                raise ProviderUnavailable(f"{self.name} pidió captcha / bloqueó el acceso")
+                raise ProviderBlocked(f"{self.name} pidió captcha / bloqueó el acceso")
 
             cards = page.query_selector_all(self.rules["card_selector"])
             texts = [c.inner_text() for c in cards[:30]]

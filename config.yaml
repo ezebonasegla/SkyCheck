@@ -51,19 +51,24 @@ providers:
     max_searches_per_run: 3
   despegar:
     enabled: true
-    max_searches_per_run: 10
+    max_searches_per_run: 5
   turismocity:
     enabled: true
-    max_searches_per_run: 10
+    max_searches_per_run: 5
   skyscanner:
     enabled: true
-    max_searches_per_run: 10
+    max_searches_per_run: 5
   cheapoair:
     enabled: true
-    max_searches_per_run: 10
+    max_searches_per_run: 5
 
-# Pausa (segundos) entre búsquedas de un mismo sitio, para no ser bloqueado.
-delay_between_searches: [8, 20]
+# Pausa (segundos) entre búsquedas de un mismo sitio. Pocas búsquedas y
+# espaciadas = menos chances de que el sitio bloquee.
+delay_between_searches: [20, 60]
+
+# Si un sitio pide captcha o bloquea, no se lo vuelve a consultar por estas horas
+# (insistir enseguida solo hace que el bloqueo dure más).
+block_cooldown_hours: 48
 
 database: data/history.sqlite
 report_file: data/ultimo_reporte.md
