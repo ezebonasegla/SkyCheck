@@ -1,9 +1,7 @@
 name: SkyCheck diario
-# Desde los servidores de GitHub solo se consulta Google Flights (vía SerpApi):
-# Despegar, Turismocity, Skyscanner y CheapOair bloquean las IPs de servidores.
-# Para esos sitios usá la tarea programada en tu compu (ver README). Si la usás,
-# desactivá este workflow (Actions -> SkyCheck diario -> ... -> Disable workflow)
-# para no recibir dos mails ni gastar dos veces la cuota de SerpApi.
+# Corre solo, todos los días, en los servidores de GitHub. Consulta las 5 fuentes.
+# Si Despegar / Turismocity / Skyscanner / CheapOair piden captcha, ese sitio queda
+# en pausa 48 h (el historial de pausas se guarda en data/) y el mail lo avisa.
 
 on:
   schedule:
@@ -32,6 +30,7 @@ jobs:
       - name: Instalar dependencias
         run: |
           pip install -r requirements.txt
+          python -m playwright install --with-deps chromium
 
       - name: Buscar vuelos y enviar resumen
         env:
@@ -39,7 +38,7 @@ jobs:
           EMAIL_TO: ${{ secrets.EMAIL_TO }}
           SMTP_USER: ${{ secrets.SMTP_USER }}
           SMTP_PASSWORD: ${{ secrets.SMTP_PASSWORD }}
-        run: python -m skycheck.main --only google_flights
+        run: python -m skycheck.main
 
       - name: Guardar historial
         if: always()

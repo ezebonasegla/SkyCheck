@@ -22,22 +22,22 @@ Todo se configura en [`config.yaml`](config.yaml) (rutas, fechas, días, precio 
    reporte (`data/ultimo_reporte.md`).
 4. Envía el resumen por email.
 
-## ¿Dónde corre? Dos opciones
+## Dónde corre
 
-| | En tu compu (recomendado) | En GitHub Actions |
-|---|---|---|
-| Fuentes | las 5 | solo Google Flights |
-| Requisito | la compu prendida (si estaba apagada, corre al prenderla) | nada |
-| Por qué | Despegar, Turismocity, Skyscanner y CheapOair bloquean las IPs de servidores como los de GitHub, pero no a una conexión hogareña que hace unas pocas búsquedas por día | |
+Todo automático en **GitHub Actions**: todos los días a las 08:17 (hora Argentina),
+sin necesidad de tener la compu prendida. El historial de precios se guarda en el repo.
 
-Usá **una sola** para no recibir dos mails: si programás tu compu, desactivá el
-workflow en GitHub (*Actions → SkyCheck diario → ⋯ → Disable workflow*).
+**Google Flights** (vía SerpApi) es la fuente estable. Despegar, Turismocity,
+Skyscanner y CheapOair se intentan también, pero suelen bloquear servidores como los
+de GitHub: cuando pasa, el mail lo dice en "Estado de las fuentes".
+
+(Opcional: también se puede correr en tu compu con `correr.bat` / `correr.sh`, ver más abajo.)
 
 ### Para no ser bloqueado
 - Pocas búsquedas: 5 por sitio por día, con 20–60 s de pausa entre una y otra.
 - Si un sitio pide captcha o bloquea, el bot **lo deja en pausa 48 h** en vez de
   insistir (`block_cooldown_hours` en `config.yaml`). El mail lo indica.
-- **Captcha → lo resolvés vos:** en tu compu el navegador se abre visible. Si un sitio
+- **Solo si lo corrés en tu compu:** el navegador se abre visible. Si un sitio
   muestra captcha, suena un aviso y el bot espera hasta 10 minutos a que lo resuelvas
   en la ventana, y sigue solo (`browser` en `config.yaml`). Si no estás, ese sitio
   queda en pausa y el resto sigue.
@@ -64,7 +64,11 @@ API key como secreto `SERPAPI_KEY`. Con el plan gratis el bot hace 3 búsquedas 
 si pagás un plan más grande subí `max_searches_per_run` en `config.yaml`.
 Google Flights calcula el precio **con el carry-on incluido** (`bags=1`).
 
-### 3a. Programarlo en tu compu (Windows)
+### 3. Probarlo
+Pasá la rama a `main`, y en la pestaña **Actions** → *SkyCheck diario* → **Run workflow**.
+En unos minutos te llega el mail. Desde ahí corre solo todos los días.
+
+### Opcional: correrlo en tu compu (Windows)
 1. Instalá Python 3 desde <https://www.python.org/downloads/> (tildá *Add python.exe to PATH*).
 2. Descargá el repo (*Code → Download ZIP*) y descomprimilo, por ejemplo en `C:\SkyCheck`.
 3. Copiá `.env.example` como `.env` y completá tu mail, la contraseña de aplicación y la
@@ -77,10 +81,6 @@ Google Flights calcula el precio **con el carry-on incluido** (`bags=1`).
 
 En Mac/Linux: lo mismo con `./correr.sh`, y programarlo con `crontab -e` agregando
 `0 9 * * * /ruta/a/SkyCheck/correr.sh`.
-
-### 3b. O dejarlo en GitHub Actions
-En la pestaña **Actions** → *SkyCheck diario* → **Run workflow**. En unos minutos te
-llega el mail (solo con Google Flights).
 
 ## Comandos
 
